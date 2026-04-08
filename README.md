@@ -87,11 +87,12 @@ To run dis-vulncheck:
 
 ### Flags
 
-You can use two different flags against dis-vulncheck:
+You can use the following flags against dis-vulncheck:
 
 - `--build-tags` will pass this down to the underlying govulncheck scan
 - `--config` can supply a string filepath for your config file
 - `--verbose` will add full logging output
+- `--tool` use govulncheck via `go tool` (default: `true`). Set to `false` to run `govulncheck` directly from PATH
 
 ## What it checks against
 

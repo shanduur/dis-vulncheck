@@ -238,7 +238,13 @@ func Generate(ctx context.Context, cfg *config.Config) (*VulnerabilityReport, er
 // TODO: Abstract this behind a cmd interface for better testing.
 // TODO: Split out the installation command
 func runGoVulncheckReport(ctx context.Context, cfg *config.Config) (GoVulncheckReport, error) {
-	cmd := "go tool golang.org/x/vuln/cmd/govulncheck"
+	var cmd string
+	if cfg.UseTool {
+		cmd = "go tool golang.org/x/vuln/cmd/govulncheck"
+	} else {
+		cmd = "govulncheck"
+	}
+
 	if cfg.GoToolChain != "" {
 		cmd = fmt.Sprintf("GOTOOLCHAIN=%s %s", cfg.GoToolChain, cmd)
 	}
@@ -248,10 +254,6 @@ func runGoVulncheckReport(ctx context.Context, cfg *config.Config) (GoVulncheckR
 	}
 
 	cmd = fmt.Sprintf("%s -format openvex ./...", cmd)
-
-	if cfg.GoToolChain != "" {
-		cmd = fmt.Sprintf("GOTOOLCHAIN=%s %s", cfg.GoToolChain, cmd)
-	}
 
 	s := spinner.New(spinner.CharSets[36], 100*time.Millisecond)
 	s.Prefix = "Analysing code..."

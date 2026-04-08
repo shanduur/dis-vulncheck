@@ -21,7 +21,7 @@ func TestCliArgs(t *testing.T) {
 		// Reset flags for test
 		flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
-		os.Args = []string{"dis-vulncheck", "--verbose", "--config=./mycustomfilepath", "--build-tags=production"}
+		os.Args = []string{"dis-vulncheck", "--verbose", "--config=./mycustomfilepath", "--build-tags=production", "--tool=false"}
 
 		Convey("When the cli arg values are retrieved", func() {
 			cliArgs := config.GetCliArgs()
@@ -29,6 +29,7 @@ func TestCliArgs(t *testing.T) {
 				So(cliArgs.BuildTags, ShouldEqual, "production")
 				So(cliArgs.ConfigFilePath, ShouldEqual, "./mycustomfilepath")
 				So(cliArgs.Verbose, ShouldBeTrue)
+				So(cliArgs.Tool, ShouldBeFalse)
 			})
 		})
 	})
@@ -48,6 +49,7 @@ func TestCliArgs(t *testing.T) {
 			Convey("Then they should be set to their defaults", func() {
 				So(cliArgs.Verbose, ShouldBeFalse)
 				So(cliArgs.ConfigFilePath, ShouldEqual, "")
+				So(cliArgs.Tool, ShouldBeTrue)
 			})
 		})
 	})
