@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ONSdigital/dis-vulncheck/output"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/goccy/go-yaml"
+	"github.com/shanduur/dis-vulncheck/output"
 	"github.com/spf13/afero"
 )
 

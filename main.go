@@ -6,10 +6,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/ONSdigital/dis-vulncheck/config"
-	"github.com/ONSdigital/dis-vulncheck/output"
-	"github.com/ONSdigital/dis-vulncheck/report"
 	"github.com/ONSdigital/log.go/v2/log"
+	"github.com/shanduur/dis-vulncheck/config"
+	"github.com/shanduur/dis-vulncheck/output"
+	"github.com/shanduur/dis-vulncheck/report"
 	"github.com/spf13/afero"
 )
 

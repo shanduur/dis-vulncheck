@@ -8,10 +8,10 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/ONSdigital/dis-vulncheck/config"
-	"github.com/ONSdigital/dis-vulncheck/output"
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/briandowns/spinner"
+	"github.com/shanduur/dis-vulncheck/config"
+	"github.com/shanduur/dis-vulncheck/output"
 )
 
 var (
@@ -215,33 +215,10 @@ func Generate(ctx context.Context, cfg *config.Config) (*VulnerabilityReport, er
 // TODO: Abstract this behind a cmd interface for better testing.
 // TODO: Split out the installation command
 func runGoVulncheckReport(ctx context.Context, cfg *config.Config) (GoVulncheckReport, error) {
-	installCmd := "go install golang.org/x/vuln/cmd/govulncheck@latest"
+	cmd := "go tool golang.org/x/vuln/cmd/govulncheck"
 	if cfg.GoToolChain != "" {
-		installCmd = fmt.Sprintf("GOTOOLCHAIN=%s %s", cfg.GoToolChain, installCmd)
+		cmd = fmt.Sprintf("GOTOOLCHAIN=%s %s", cfg.GoToolChain, cmd)
 	}
-
-	log.Info(ctx, "installing go vulncheck", log.Data{
-		"installCmd": installCmd,
-		"toolchain":  cfg.GoToolChain,
-	})
-
-	sInstall := spinner.New(spinner.CharSets[36], 100*time.Millisecond)
-	sInstall.Prefix = "Installing govulncheck for toolchain..."
-	sInstall.Start()
-
-	_, err := execCommand(ctx, installCmd, ".")
-	if err != nil {
-		sInstall.Stop()
-		log.Error(ctx, "not able to install govulncheck", err)
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return GoVulncheckReport{}, fmt.Errorf("not able to install govulncheck: %v", string(exitErr.Stderr))
-		} else {
-			return GoVulncheckReport{}, fmt.Errorf("not able to install govulncheck: %v", err)
-		}
-	}
-	sInstall.Stop()
-
-	cmd := "govulncheck"
 
 	if cfg.BuildTags != "" {
 		cmd = fmt.Sprintf("%s -tags=%s", cmd, cfg.BuildTags)

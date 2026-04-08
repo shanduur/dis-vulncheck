@@ -1,4 +1,4 @@
-module github.com/ONSdigital/dis-vulncheck
+module github.com/shanduur/dis-vulncheck
 
 go 1.25
 

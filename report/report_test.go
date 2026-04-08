@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ONSdigital/dis-vulncheck/config"
+	"github.com/shanduur/dis-vulncheck/config"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
