@@ -21,10 +21,11 @@ var (
 )
 
 type VulnerabilityReport struct {
-	Statements    []VulnerabilityStatement `json:"statements"`
-	Results       VulnerabilityResults     `json:"results"`
-	FailedIgnores []config.IgnoreStatement `json:"failed_ignores"`
-	GoToolchain   string                   `json:"toolchain"`
+	Statements     []VulnerabilityStatement `json:"statements"`
+	Results        VulnerabilityResults     `json:"results"`
+	FailedIgnores  []config.IgnoreStatement `json:"failed_ignores"`
+	ExpiredIgnores []config.IgnoreStatement `json:"expired_ignores"`
+	GoToolchain    string                   `json:"toolchain"`
 }
 
 type VulnerabilityResults struct {
@@ -67,21 +68,37 @@ func NewVulnerabilityReport(ctx context.Context, cfg *config.Config, govulncheck
 	report.Statements = govulncheckReport.Statements
 
 	if cfg.UserConfig != nil && cfg.UserConfig.Ignore != nil {
-		report.excludeVulnerabilities(ctx, cfg.UserConfig.Ignore)
+		report.excludeVulnerabilities(ctx, cfg.UserConfig.Ignore, cfg.UserConfig.GetIgnoreTTL())
 	}
 
 	report.countAuditFailures(ctx)
+
+	// Expired ignores count as failures since the vulnerability is no longer suppressed
+	report.Results.Failures += len(report.ExpiredIgnores)
 
 	return report
 }
 
 // excludeVulnerabilities rewrites the report to ignore the vulnerabilities specified
-func (v *VulnerabilityReport) excludeVulnerabilities(ctx context.Context, ignores []config.IgnoreStatement) {
+func (v *VulnerabilityReport) excludeVulnerabilities(ctx context.Context, ignores []config.IgnoreStatement, ttl time.Duration) {
 	log.Info(ctx, "excluding vulnerabilties")
+
+	now := time.Now()
 
 	for i := range v.Statements {
 		for j := range ignores {
 			if ignores[j].ID == v.Statements[i].Metadata.Name {
+				if !ignores[j].Date.IsZero() && now.Sub(ignores[j].Date) > ttl {
+					log.Info(ctx, "ignore has expired", log.Data{
+						"vulnerabilityID": ignores[j].ID,
+						"date":            ignores[j].Date,
+						"ttl":             ttl,
+					})
+					v.ExpiredIgnores = append(v.ExpiredIgnores, ignores[j])
+					ignores[j].Matched = true
+					continue
+				}
+
 				log.Info(ctx, "excluded vulnerabilty", log.Data{
 					"vulnerabilityID": ignores[j].ID,
 				})
@@ -198,6 +215,12 @@ func renderProducts(b *bytes.Buffer, products []Product) {
 func (v *VulnerabilityReport) renderFailedIgnores(b *bytes.Buffer) {
 	for i := range v.FailedIgnores {
 		b.WriteString(output.WarnSprintf("You are ignoring a vulnerability that this application is not affected by: %s\n", v.FailedIgnores[i].ID))
+	}
+	for i := range v.ExpiredIgnores {
+		b.WriteString(output.ErrorSprintf("Ignore for %s has expired (added %s): please review and renew or remove this ignore\n",
+			v.ExpiredIgnores[i].ID,
+			v.ExpiredIgnores[i].Date.Format(time.DateOnly),
+		))
 	}
 }
 

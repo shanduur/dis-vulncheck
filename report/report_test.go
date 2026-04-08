@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/shanduur/dis-vulncheck/config"
 	. "github.com/smartystreets/goconvey/convey"
@@ -75,6 +76,7 @@ func TestReportGeneration(t *testing.T) {
 					{
 						ID:     "GO-2025-3749",
 						Reason: "This is a test and I want to test ignoring it",
+						Date:   time.Now(),
 					},
 				},
 			},
@@ -98,6 +100,7 @@ func TestReportGeneration(t *testing.T) {
 					{
 						ID:     "GO-2025-3749",
 						Reason: "This is a test and I want to test failing to ignore it",
+						Date:   time.Now(),
 					},
 				},
 			},
@@ -110,6 +113,125 @@ func TestReportGeneration(t *testing.T) {
 			So(dvulnReport.Results.Failures, ShouldEqual, 0)
 
 			So(dvulnReport.FailedIgnores, ShouldHaveLength, 1)
+		})
+	})
+
+	Convey("Given an ignore statement that has expired past the TTL", t, func() {
+		ctx := context.Background()
+
+		gvreport := GoVulncheckReport{
+			Statements: []VulnerabilityStatement{
+				{
+					Metadata: VulnerabilityMetadata{
+						ID:          "https://pkg.go.dev/vuln/GO-2025-3749",
+						Name:        "GO-2025-3749",
+						Description: "A vulnerability that should no longer be ignored",
+					},
+					ImpactStatement: "a statement about impact",
+					Status:          "affected",
+				},
+			},
+		}
+
+		expiredDate := time.Now().Add(-10 * 24 * time.Hour) // 10 days ago
+		cfg := &config.Config{
+			UserConfig: &config.UserConfig{
+				Ignore: []config.IgnoreStatement{
+					{
+						ID:     "GO-2025-3749",
+						Reason: "This ignore has expired",
+						Date:   expiredDate,
+					},
+				},
+			},
+		}
+		dvulnReport := NewVulnerabilityReport(ctx, cfg, gvreport)
+
+		Convey("Then the ignore should be expired and counted as a failure", func() {
+			So(dvulnReport.ExpiredIgnores, ShouldHaveLength, 1)
+			So(dvulnReport.ExpiredIgnores[0].ID, ShouldEqual, "GO-2025-3749")
+			So(dvulnReport.Results.Ignored, ShouldEqual, 0)
+			So(dvulnReport.Results.Failures, ShouldBeGreaterThan, 0)
+			So(dvulnReport.Statements[0].Status, ShouldEqual, "affected")
+		})
+	})
+
+	Convey("Given an ignore statement within TTL", t, func() {
+		ctx := context.Background()
+
+		gvreport := GoVulncheckReport{
+			Statements: []VulnerabilityStatement{
+				{
+					Metadata: VulnerabilityMetadata{
+						ID:          "https://pkg.go.dev/vuln/GO-2025-3749",
+						Name:        "GO-2025-3749",
+						Description: "A vulnerability that should still be ignored",
+					},
+					ImpactStatement: "a statement about impact",
+					Status:          "affected",
+				},
+			},
+		}
+
+		recentDate := time.Now().Add(-2 * 24 * time.Hour) // 2 days ago
+		cfg := &config.Config{
+			UserConfig: &config.UserConfig{
+				Ignore: []config.IgnoreStatement{
+					{
+						ID:     "GO-2025-3749",
+						Reason: "This ignore is still valid",
+						Date:   recentDate,
+					},
+				},
+			},
+		}
+		dvulnReport := NewVulnerabilityReport(ctx, cfg, gvreport)
+
+		Convey("Then the ignore should be applied successfully", func() {
+			So(dvulnReport.ExpiredIgnores, ShouldHaveLength, 0)
+			So(dvulnReport.Results.Ignored, ShouldEqual, 1)
+			So(dvulnReport.Statements[0].Status, ShouldEqual, "ignored")
+		})
+	})
+
+	Convey("Given an ignore with a custom TTL that has not expired", t, func() {
+		ctx := context.Background()
+
+		gvreport := GoVulncheckReport{
+			Statements: []VulnerabilityStatement{
+				{
+					Metadata: VulnerabilityMetadata{
+						ID:          "https://pkg.go.dev/vuln/GO-2025-3749",
+						Name:        "GO-2025-3749",
+						Description: "A vulnerability with custom TTL",
+					},
+					ImpactStatement: "a statement about impact",
+					Status:          "affected",
+				},
+			},
+		}
+
+		// 20 days ago, but with a 30-day TTL should still be valid
+		olderDate := time.Now().Add(-20 * 24 * time.Hour)
+		customTTL := 30 * 24 * time.Hour
+		cfg := &config.Config{
+			UserConfig: &config.UserConfig{
+				IgnoreTTL: &customTTL,
+				Ignore: []config.IgnoreStatement{
+					{
+						ID:     "GO-2025-3749",
+						Reason: "This has a longer TTL",
+						Date:   olderDate,
+					},
+				},
+			},
+		}
+		dvulnReport := NewVulnerabilityReport(ctx, cfg, gvreport)
+
+		Convey("Then the ignore should still be applied", func() {
+			So(dvulnReport.ExpiredIgnores, ShouldHaveLength, 0)
+			So(dvulnReport.Results.Ignored, ShouldEqual, 1)
+			So(dvulnReport.Statements[0].Status, ShouldEqual, "ignored")
 		})
 	})
 }

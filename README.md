@@ -44,10 +44,37 @@ ignore:
         description: "A reason why this vulnerability has been excluded from auditing"
         example: "This doesn't affect our application"
         type: string
+      date:
+        description: "The date the ignore was added (required). Used with ignore_ttl to expire stale ignores."
+        example: "2025-06-01"
+        type: string
+        format: date
+ignore_ttl:
+  description: "How long an ignore entry remains valid before it expires. Defaults to 168h (7 days)."
+  example: "720h"
+  type: string
+  format: duration
 toolchain:
   description: "An optional toolchain directive to override the default"
   example: "go1.25.0"
   type: string
+```
+
+### Ignore TTL
+
+Each ignore entry requires a `date` field indicating when it was added. dis-vulncheck uses `ignore_ttl` (default: 7 days / `168h`) to determine whether an ignore has expired. If the time elapsed since `date` exceeds the TTL, the ignore is **not applied** and the vulnerability is counted as a failure.
+
+This prevents stale ignores from silently suppressing vulnerabilities indefinitely. To renew an ignore, update its `date` to the current date.
+
+Example configuration:
+
+```yml
+---
+ignore_ttl: 720h  # 30 days
+ignore:
+  - id: GO-2025-3563
+    reason: Tracked in JIRA-1234, fix expected next sprint
+    date: 2025-06-01
 ```
 
 ## Running

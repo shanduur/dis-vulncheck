@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/ONSdigital/log.go/v2/log"
 	"github.com/goccy/go-yaml"
 	"github.com/shanduur/dis-vulncheck/output"
 	"github.com/spf13/afero"
 )
+
+const DefaultIgnoreTTL = 7 * 24 * time.Hour // 7 days
 
 type CliArgs struct {
 	BuildTags      string `json:"build-tags,omitempty"`
@@ -23,6 +26,15 @@ type CliArgs struct {
 type UserConfig struct {
 	Ignore      []IgnoreStatement `yaml:"ignore"`
 	GoToolChain string            `yaml:"toolchain"`
+	IgnoreTTL   *time.Duration    `yaml:"ignore_ttl"`
+}
+
+// GetIgnoreTTL returns the configured TTL or the default of 7 days.
+func (c *UserConfig) GetIgnoreTTL() time.Duration {
+	if c.IgnoreTTL != nil {
+		return *c.IgnoreTTL
+	}
+	return DefaultIgnoreTTL
 }
 
 type Config struct {
@@ -32,8 +44,9 @@ type Config struct {
 }
 
 type IgnoreStatement struct {
-	ID      string `yaml:"id"`
-	Reason  string `yaml:"reason"`
+	ID      string    `yaml:"id"`
+	Reason  string    `yaml:"reason"`
+	Date    time.Time `yaml:"date"`
 	Matched bool
 }
 

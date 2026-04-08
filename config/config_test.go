@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/shanduur/dis-vulncheck/config"
 	. "github.com/smartystreets/goconvey/convey"
@@ -63,6 +64,7 @@ func TestConfig(t *testing.T) {
 ignore:
     - id: GO-2025-3563
       reason: This is a reason why it should be ignored
+      date: 2025-06-01
 toolchain: go1.24.1
 `
 		fs := afero.NewMemMapFs()
@@ -76,7 +78,9 @@ toolchain: go1.24.1
 
 			Convey("Then the values should be set as appropriate", func() {
 				So(cfg.GoToolChain, ShouldEqual, "go1.24.1")
-				So(cfg.UserConfig.Ignore[0], ShouldEqual, config.IgnoreStatement{ID: "GO-2025-3563", Reason: "This is a reason why it should be ignored"})
+				So(cfg.UserConfig.Ignore[0].ID, ShouldEqual, "GO-2025-3563")
+				So(cfg.UserConfig.Ignore[0].Reason, ShouldEqual, "This is a reason why it should be ignored")
+				So(cfg.UserConfig.Ignore[0].Date, ShouldEqual, time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC))
 			})
 		})
 	})
@@ -189,6 +193,59 @@ image_resource:
 
 			Convey("And no toolchain should be set", func() {
 				So(cfg.GoToolChain, ShouldBeEmpty)
+			})
+		})
+	})
+
+	Convey("Given a config file with a custom ignore_ttl", t, func() {
+		ctx := context.Background()
+		configFilename := ".dis-vulncheck.yml"
+
+		content := `
+---
+ignore_ttl: 720h
+ignore:
+    - id: GO-2025-3563
+      reason: This vuln is being tracked
+      date: 2025-06-01
+`
+		fs := afero.NewMemMapFs()
+		afero.WriteFile(fs, configFilename, []byte(content), 0644)
+
+		Convey("When the config is retrieved", func() {
+			cfg, err := config.Get(ctx, &config.CliArgs{
+				ConfigFilePath: configFilename,
+			}, fs)
+			So(err, ShouldBeNil)
+
+			Convey("Then the TTL should be set to the custom value", func() {
+				So(cfg.UserConfig.GetIgnoreTTL(), ShouldEqual, 720*time.Hour)
+			})
+		})
+	})
+
+	Convey("Given a config file with no ignore_ttl", t, func() {
+		ctx := context.Background()
+		configFilename := ".dis-vulncheck.yml"
+
+		content := `
+---
+ignore:
+    - id: GO-2025-3563
+      reason: This vuln is being tracked
+      date: 2025-06-01
+`
+		fs := afero.NewMemMapFs()
+		afero.WriteFile(fs, configFilename, []byte(content), 0644)
+
+		Convey("When the config is retrieved", func() {
+			cfg, err := config.Get(ctx, &config.CliArgs{
+				ConfigFilePath: configFilename,
+			}, fs)
+			So(err, ShouldBeNil)
+
+			Convey("Then the TTL should default to 7 days", func() {
+				So(cfg.UserConfig.GetIgnoreTTL(), ShouldEqual, 7*24*time.Hour)
 			})
 		})
 	})
