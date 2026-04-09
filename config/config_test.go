@@ -58,7 +58,7 @@ func TestCliArgs(t *testing.T) {
 func TestConfig(t *testing.T) {
 	Convey("Given a config file that sets an ignore statement and a go toolchain", t, func() {
 		ctx := context.Background()
-		configFilename := ".dis-vulncheck.yml"
+		configFilename := ".dis-vulncheck.yml" //nolint:goconst // this is relevant to the test only
 
 		// The indentation is off here due to the way that yaml deals with whitespace.
 		content := `
@@ -201,7 +201,7 @@ image_resource:
 
 	Convey("Given a config file with a custom ignore_ttl", t, func() {
 		ctx := context.Background()
-		configFilename := ".dis-vulncheck.yml"
+		configFilename := ".dis-vulncheck.yml" //nolint:goconst // this is relevant to the test only
 
 		content := `
 ---
@@ -228,7 +228,7 @@ ignore:
 
 	Convey("Given a config file with no ignore_ttl", t, func() {
 		ctx := context.Background()
-		configFilename := ".dis-vulncheck.yml"
+		configFilename := ".dis-vulncheck.yml" //nolint:goconst // this is relevant to the test only
 
 		content := `
 ---
