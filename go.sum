@@ -2,8 +2,8 @@ github.com/ONSdigital/dp-api-clients-go/v2 v2.282.0 h1:9eR5jGMrJ7FIuALydLISRXefa
 github.com/ONSdigital/dp-api-clients-go/v2 v2.282.0/go.mod h1:vniCZ0iYfIQ5llsBigUS2khr8cSN1eXEsOKGYlopWHI=
 github.com/ONSdigital/dp-net/v3 v3.11.0 h1:oLaP0cFem0KKvxeg9ozPUux5yCGRUWlB+XQPEtzt6yU=
 github.com/ONSdigital/dp-net/v3 v3.11.0/go.mod h1:ur4LLCvd2xW2jpa785pElE6HB2bPvszZxdAjqv0XFGg=
-github.com/ONSdigital/log.go/v2 v2.5.2 h1:V6NYtbi+thHYTwckxOXPklZUgQCNBo1/fyPPIutu4V4=
-github.com/ONSdigital/log.go/v2 v2.5.2/go.mod h1:KZNEweCUHD8dKwhlvoRvgd2Y2aUIuU3H9/MmbFyVzW8=
+github.com/ONSdigital/log.go/v2 v2.6.0 h1:HkwNLqyv03gRSdeMl++r2nxyWDFH7ynH+YFoS+DQPi0=
+github.com/ONSdigital/log.go/v2 v2.6.0/go.mod h1:KZNEweCUHD8dKwhlvoRvgd2Y2aUIuU3H9/MmbFyVzW8=
 github.com/briandowns/spinner v1.23.2 h1:Zc6ecUnI+YzLmJniCfDNaMbW0Wid1d5+qcTq4L2FW8w=
 github.com/briandowns/spinner v1.23.2/go.mod h1:LaZeM4wm2Ywy6vO571mvhQNRcWfRUnXOs0RcKV0wYKM=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=

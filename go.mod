@@ -3,7 +3,7 @@ module github.com/shanduur/dis-vulncheck
 go 1.26
 
 require (
-	github.com/ONSdigital/log.go/v2 v2.5.2
+	github.com/ONSdigital/log.go/v2 v2.6.0
 	github.com/briandowns/spinner v1.23.2
 	github.com/fatih/color v1.19.0
 	github.com/goccy/go-yaml v1.19.2
