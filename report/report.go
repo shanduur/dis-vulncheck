@@ -8,7 +8,8 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/ONSdigital/log.go/v2/log"
+	"log/slog"
+
 	"github.com/briandowns/spinner"
 	"github.com/shanduur/dis-vulncheck/config"
 	"github.com/shanduur/dis-vulncheck/output"
@@ -81,7 +82,7 @@ func NewVulnerabilityReport(ctx context.Context, cfg *config.Config, govulncheck
 
 // excludeVulnerabilities rewrites the report to ignore the vulnerabilities specified
 func (v *VulnerabilityReport) excludeVulnerabilities(ctx context.Context, ignores []config.IgnoreStatement, ttl time.Duration) {
-	log.Info(ctx, "excluding vulnerabilties")
+	slog.InfoContext(ctx, "excluding vulnerabilties")
 
 	now := time.Now()
 
@@ -89,19 +90,17 @@ func (v *VulnerabilityReport) excludeVulnerabilities(ctx context.Context, ignore
 		for j := range ignores {
 			if ignores[j].ID == v.Statements[i].Metadata.Name {
 				if !ignores[j].Date.IsZero() && now.Sub(ignores[j].Date) > ttl {
-					log.Info(ctx, "ignore has expired", log.Data{
-						"vulnerabilityID": ignores[j].ID,
-						"date":            ignores[j].Date,
-						"ttl":             ttl,
-					})
+					slog.InfoContext(ctx, "ignore has expired",
+						"vulnerabilityID", ignores[j].ID,
+						"date", ignores[j].Date,
+						"ttl", ttl,
+					)
 					v.ExpiredIgnores = append(v.ExpiredIgnores, ignores[j])
 					ignores[j].Matched = true
 					continue
 				}
 
-				log.Info(ctx, "excluded vulnerabilty", log.Data{
-					"vulnerabilityID": ignores[j].ID,
-				})
+				slog.InfoContext(ctx, "excluded vulnerabilty", "vulnerabilityID", ignores[j].ID)
 				v.Statements[i].Status = "ignored"
 				ignores[j].Matched = true
 			}
@@ -110,9 +109,7 @@ func (v *VulnerabilityReport) excludeVulnerabilities(ctx context.Context, ignore
 
 	for i := range ignores {
 		if !ignores[i].Matched {
-			log.Info(ctx, "vulnerability to ignore was not matched", log.Data{
-				"vulnerabilityID": ignores[i].ID,
-			})
+			slog.InfoContext(ctx, "vulnerability to ignore was not matched", "vulnerabilityID", ignores[i].ID)
 			v.FailedIgnores = append(v.FailedIgnores, ignores[i])
 		}
 	}
@@ -129,9 +126,7 @@ func (v *VulnerabilityReport) countAuditFailures(ctx context.Context) {
 		case ResultTypeIgnored:
 			v.Results.Ignored++
 		default:
-			log.Info(ctx, "didn't recognise vulnerability status", log.Data{
-				"status": v.Statements[i].Status,
-			})
+			slog.InfoContext(ctx, "didn't recognise vulnerability status", "status", v.Statements[i].Status)
 		}
 	}
 }
@@ -262,7 +257,7 @@ func runGoVulncheckReport(ctx context.Context, cfg *config.Config) (GoVulncheckR
 	cmdOutput, err := execCommand(ctx, cmd, ".")
 	if err != nil {
 		s.Stop()
-		log.Error(ctx, "not able to run govulncheck", err)
+		slog.ErrorContext(ctx, "not able to run govulncheck", "error", err)
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			return GoVulncheckReport{}, fmt.Errorf("not able to run govulncheck: %v", string(exitErr.Stderr))
 		} else {
@@ -276,7 +271,7 @@ func runGoVulncheckReport(ctx context.Context, cfg *config.Config) (GoVulncheckR
 
 	err = json.Unmarshal(cmdOutput, &report)
 	if err != nil {
-		log.Error(ctx, "unable to unmarshal report", err)
+		slog.ErrorContext(ctx, "unable to unmarshal report", "error", err)
 		return GoVulncheckReport{}, fmt.Errorf("unable to unmarshal report: %v", err)
 	}
 
@@ -286,9 +281,7 @@ func runGoVulncheckReport(ctx context.Context, cfg *config.Config) (GoVulncheckR
 // ExecCommand executes the given command with bash and then returns the result
 // as a byte array
 func execCommand(ctx context.Context, command, wrkDir string) ([]byte, error) {
-	log.Info(ctx, "executing command", log.Data{
-		"command": command,
-	})
+	slog.InfoContext(ctx, "executing command", "command", command)
 
 	cmd := exec.Command("bash", "-c", command)
 

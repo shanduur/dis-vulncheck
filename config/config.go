@@ -9,7 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ONSdigital/log.go/v2/log"
+	"log/slog"
+
 	"github.com/goccy/go-yaml"
 	"github.com/shanduur/dis-vulncheck/output"
 	"github.com/spf13/afero"
@@ -65,7 +66,7 @@ var (
 func getGoToolChain(ctx context.Context, userCfg *UserConfig, fs afero.Fs) string {
 	CIBuildVersion, err := getCIGoBuildVersion(ctx, defaultCIBuildFilePath, fs)
 	if err != nil {
-		log.Error(ctx, "couldn't load build version from CI files - allowing Go toolchain to default", err)
+		slog.ErrorContext(ctx, "couldn't load build version from CI files - allowing Go toolchain to default", "error", err)
 	}
 
 	if userCfg.GoToolChain != "" {
@@ -97,13 +98,13 @@ func getCIGoBuildVersion(ctx context.Context, filepath string, fs afero.Fs) (str
 
 	buildBytes, err := afero.ReadFile(fs, filepath)
 	if err != nil {
-		log.Error(ctx, "unable to read ci build file", err)
+		slog.ErrorContext(ctx, "unable to read ci build file", "error", err)
 		return "", err
 	}
 
 	err = yaml.Unmarshal(buildBytes, &ciBuild)
 	if err != nil {
-		log.Error(ctx, "unable to unmarshal ci build file yaml", err)
+		slog.ErrorContext(ctx, "unable to unmarshal ci build file yaml", "error", err)
 		return "", err
 	}
 
@@ -124,9 +125,7 @@ func pickUserConfigFile(ctx context.Context, cliArgs *CliArgs, fs afero.Fs) (str
 		if _, err := fs.Stat(cliArgs.ConfigFilePath); err == nil {
 			return cliArgs.ConfigFilePath, nil
 		} else {
-			log.Error(ctx, "error finding custom config file", err, log.Data{
-				"filepath": cliArgs.ConfigFilePath,
-			})
+			slog.ErrorContext(ctx, "error finding custom config file", "error", err, "filepath", cliArgs.ConfigFilePath)
 			return "", err
 		}
 	} else {
@@ -135,7 +134,7 @@ func pickUserConfigFile(ctx context.Context, cliArgs *CliArgs, fs afero.Fs) (str
 				return filename, nil
 			}
 		}
-		log.Info(ctx, "no default config files available")
+		slog.InfoContext(ctx, "no default config files available")
 	}
 	// No user config file is acceptable
 	return "", nil
@@ -146,9 +145,7 @@ func getUserConfig(ctx context.Context, cliArgs *CliArgs, fs afero.Fs) (*UserCon
 
 	configFileName, err := pickUserConfigFile(ctx, cliArgs, fs)
 	if err != nil {
-		log.Info(ctx, "couldn't get a user config file", log.Data{
-			"filename": configFileName,
-		})
+		slog.InfoContext(ctx, "couldn't get a user config file", "filename", configFileName)
 		return &UserConfig{}, err
 	}
 
@@ -157,19 +154,17 @@ func getUserConfig(ctx context.Context, cliArgs *CliArgs, fs afero.Fs) (*UserCon
 		return &UserConfig{}, nil
 	}
 
-	log.Info(ctx, "getting config from file", log.Data{
-		"filename": configFileName,
-	})
+	slog.InfoContext(ctx, "getting config from file", "filename", configFileName)
 
 	configBytes, err := afero.ReadFile(fs, configFileName)
 	if err != nil {
-		log.Error(ctx, "unable to read config file", err)
+		slog.ErrorContext(ctx, "unable to read config file", "error", err)
 		return &UserConfig{}, err
 	}
 
 	err = yaml.Unmarshal(configBytes, &cfg)
 	if err != nil {
-		log.Error(ctx, "unable to unmarshal config file yaml", err)
+		slog.ErrorContext(ctx, "unable to unmarshal config file yaml", "error", err)
 		return &UserConfig{}, err
 	}
 
@@ -193,7 +188,7 @@ func GetCliArgs() *CliArgs {
 func Get(ctx context.Context, cliArgs *CliArgs, fs afero.Fs) (*Config, error) {
 	userConfig, err := getUserConfig(ctx, cliArgs, fs)
 	if err != nil {
-		log.Error(ctx, "unable to load config", err)
+		slog.ErrorContext(ctx, "unable to load config", "error", err)
 		return nil, fmt.Errorf("unable to load config: %v", err)
 	}
 
@@ -206,9 +201,7 @@ func Get(ctx context.Context, cliArgs *CliArgs, fs afero.Fs) (*Config, error) {
 		UserConfig:  userConfig,
 	}
 
-	log.Info(ctx, "config", log.Data{
-		"config": cfg,
-	})
+	slog.InfoContext(ctx, "config", "config", cfg)
 
 	return &cfg, err
 }
